@@ -7,15 +7,15 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
+import Navbar from "@/app/components/navbar/navbar";
 import DetailFine from "@/app/components/detail-fine/page";
-// import UpdateFine from "@/app/pages/users/update-fine/page";
+import UpdateFine from "@/app/pages/admin/update-fine/page";
+import ButtonUpdate from "@/app/components/button-update/buttonUpdate";
+import ButtonDelete from "@/app/components/button-delete/buttonDelete";
 import Search from "@/app/components/search/search";
-import ButtonDeleteFine from "@/app/components/button-delete-fine/buttonDeleteFine";
-import ButtonUpdateFine from "@/app/components/button-update-fine/buttonUpdateFine";
 import Loading from "@/app/loading";
 import AuthAdmin from "@/app/components/auth-admin/authAdmin";
-import { fetchFineByAdmin } from "@/redux/features/fineSlice";
-import Navbar from "@/app/components/navbar/navbar";
+import { deleteFine, fetchFineByAdmin } from "@/redux/features/fineSlice";
 
 function ListFine() {
   const { data: session, status } = useSession();
@@ -68,15 +68,13 @@ function ListFine() {
           closeModalDetailFine={closeModalDetailFine}
           dataFine={dataFine}
         />
-        {/* <UpdateFine
-        modalUpdateFine={modalUpdateFine}
-        setModalUpdateFine={setModalUpdateFine}
-        closeModalUpdateFine={closeModalUpdateFine}
-        dataFine={dataFine}
-        fetchTransactions={() =>
-          dispatch(fetchFineByAdmin({ session, status }))
-        }
-      /> */}
+        <UpdateFine
+          modalUpdateFine={modalUpdateFine}
+          setModalUpdateFine={setModalUpdateFine}
+          closeModalUpdateFine={closeModalUpdateFine}
+          dataFine={dataFine}
+          fetchFines={() => dispatch(fetchFineByAdmin({ session, status }))}
+        />
         <div className="w-full px-4 md:px-10 lg:px-20 pb-10">
           <div className="mb-5 flex justify-between">
             <p className="m-0 text-center font-bold text-2xl text-gray-500">
@@ -181,19 +179,21 @@ function ListFine() {
                                   <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center">
                                     {fine?.totalFine}
                                   </td>
-                                  <td className={`whitespace-nowrap px-2 py-4 font-medium text-center ${
+                                  <td
+                                    className={`whitespace-nowrap px-2 py-4 font-medium text-center ${
                                       fine?.status === "success"
                                         ? "text-green-500"
                                         : "text-red-500"
-                                    }`}>
-                                     {fine?.status === "success"
+                                    }`}
+                                  >
+                                    {fine?.status === "success"
                                       ? "Paid"
                                       : "Not Paid"}
                                   </td>
-                                  <td className="flex justify-center whitespace-nowrap px-6 py-4 text-center">
+                                  <td className="flex flex-col justify-center items-center whitespace-nowrap px-6 py-4 text-center">
                                     <button
                                       type="button"
-                                      className="mr-3 px-3 py-1 font-medium rounded-md shadow-sm bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white hover:opacity-80"
+                                      className="mb-3 px-3 py-1 font-medium rounded-md shadow-sm bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white hover:opacity-80"
                                       onClick={() => {
                                         setModalDetailFine(true);
                                         setDataFine(fine);
@@ -201,14 +201,34 @@ function ListFine() {
                                     >
                                       Detail Fine
                                     </button>
-                                    <div className="flex justify-between">
-                                      <ButtonDeleteFine
-                                        fineId={fine?.id}
-                                        fetchFines={() =>
+                                    <div className="flex justify-center gap-2">
+                                      <ButtonUpdate
+                                        data={fine}
+                                        title={null}
+                                        isStatus={null}
+                                        setData={setDataFine}
+                                        setModalUpdate={setModalUpdateFine}
+                                      />
+                                      <span className="text-gray-500 font-bold text-xl">
+                                        {" "}
+                                        |{" "}
+                                      </span>
+                                      <ButtonDelete
+                                        id={fine?.id}
+                                        title="fine"
+                                        fetchData={() =>
                                           dispatch(
                                             fetchFineByAdmin({
                                               session,
                                               status,
+                                            })
+                                          )
+                                        }
+                                        deleteData={() =>
+                                          dispatch(
+                                            deleteFine({
+                                              id: fine?.id,
+                                              session,
                                             })
                                           )
                                         }

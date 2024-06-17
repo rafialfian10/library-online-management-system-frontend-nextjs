@@ -2,20 +2,19 @@
 
 import { useSession } from "next-auth/react";
 
-import moment from "moment";
+import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment } from "react";
 
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/redux/store";
 
-import AuthUser from "@/app/components/auth-user/authUser";
-import { updateTransaction } from "@/redux/features/transactionSlice";;
+import AuthAdmin from "@/app/components/auth-admin/authAdmin";
+import { updateFineByAdmin } from "@/redux/features/fineSlice";
 
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export interface UpdateFineProps {
+export interface UpdateFineByAdminProps {
   modalUpdateFine: boolean;
   setModalUpdateFine: React.Dispatch<React.SetStateAction<boolean>>;
   closeModalUpdateFine: () => void;
@@ -29,28 +28,27 @@ function UpdateFine({
   closeModalUpdateFine,
   dataFine,
   fetchFines,
-}: UpdateFineProps) {
+}: UpdateFineByAdminProps) {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
 
-  const handleUpdateTransaction = async (e: any) => {
+  const [statusFine, setStatusFine] = useState(dataFine?.status);
+
+  const handleUpdateFine = async (e: any) => {
     e.preventDefault();
     try {
       const data: any = {
         idBook: dataFine?.idBook,
-        transactionType: dataFine?.isStatus ? "Return" : "Borrow",
-        totalBook: dataFine?.totalBook,
-        isStatus: !dataFine?.isStatus,
+        status: statusFine,
       };
 
       const formData = new FormData();
       formData.append("idBook", data.idBook);
-      formData.append("transactionType", data.transactionType);
-      formData.append("isStatus", data.isStatus);
+      formData.append("status", data.status);
 
       const response = await dispatch(
-        updateTransaction({ formData, id: dataFine?.id, session })
+        updateFineByAdmin({ formData, id: dataFine?.id, session })
       );
       if (response.payload && response.payload.status === 200) {
         toast.success(response.payload.message, {
@@ -122,9 +120,7 @@ function UpdateFine({
                 <Dialog.Panel className="w-full max-w-md md:max-w-4xl mt-20 mb-10 transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                   <div className="overflow-x-auto">
                     <p className="w-full mb-5 font-bold text-2xl text-gray-500">
-                      {dataFine?.isStatus
-                        ? "Return Book"
-                        : "Borrow Book"}
+                      Update Fine Status
                     </p>
                     <table className="min-w-full text-left text-sm font-light overflow-x-auto">
                       <thead className="bg-white font-medium bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 shadow shadow-gray-400">
@@ -145,25 +141,7 @@ function UpdateFine({
                             scope="col"
                             className="px-2 py-4 text-white font-bold text-center"
                           >
-                            Total<span className="text-transparent">x</span>Book
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-2 py-4 text-white font-bold text-center"
-                          >
-                            Loan<span className="text-transparent">x</span>Date
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-2 py-4 text-white font-bold text-center"
-                          >
-                            Return<span className="text-transparent">x</span>Date
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-2 py-4 text-white font-bold text-center"
-                          >
-                            Max<span className="text-transparent">x</span>Loan
+                            Status
                           </th>
                         </tr>
                       </thead>
@@ -176,40 +154,27 @@ function UpdateFine({
                           <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center">
                             {dataFine?.book?.title}
                           </td>
-                          <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center">
-                            {dataFine?.totalBook}
-                          </td>
-                          <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center">
-                            {moment(dataFine?.loanDate).format(
-                              "DD MMMM YYYY"
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center">
-                            {moment(dataFine?.returnDate).format(
-                              "DD MMMM YYYY"
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center">
-                            {moment(dataFine?.loanMaximum).format(
-                              "DD MMMM YYYY"
-                            )}
+                          <td className="whitespace-nowrap px-2 py-4 font-medium text-center">
+                            <select
+                              value={statusFine}
+                              onChange={(e) => setStatusFine(e.target.value)}
+                             className="text-gray-500"
+                            >
+                              <option value="failed" className="text-gray-500" selected={dataFine?.status === "failed"}>Not Paid</option>
+                              <option value="success" className="text-gray-500" selected={dataFine?.status === "success"}>Paid</option>
+                            </select>
                           </td>
                         </tr>
                         <tr className="border-b bg-white">
-                          <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center"></td>
-                          <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center"></td>
-                          <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center"></td>
                           <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center"></td>
                           <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-center"></td>
                           <td className="whitespace-nowrap px-2 py-4 font-medium text-gray-500 text-end">
                             <button
                               type="submit"
                               className="mr-3 px-3 py-1 rounded-md shadow bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white"
-                              onClick={handleUpdateTransaction}
+                              onClick={handleUpdateFine}
                             >
-                              {dataFine?.isStatus
-                                ? "Return Book"
-                                : "Borrow Book"}
+                              Update Status
                             </button>
                             <button
                               type="submit"
@@ -233,4 +198,4 @@ function UpdateFine({
   );
 }
 
-export default AuthUser(UpdateFine);
+export default AuthAdmin(UpdateFine);

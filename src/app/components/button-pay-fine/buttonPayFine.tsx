@@ -11,9 +11,9 @@ import { updateFine } from "@/redux/features/fineSlice";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import "./button-update-fine.module.css";
+import "./button-pay-fine.module.css";
 
-interface FineUpdateProps {
+interface PayFineProps {
   fine: object;
   fineStatus: string;
   session: any;
@@ -26,20 +26,18 @@ declare global {
   }
 }
 
-export default function ButtonUpdateFine({
+export default function ButtonPayFine({
   fine,
   fineStatus,
   session,
   fetchFineByUser,
-}: FineUpdateProps) {
+}: PayFineProps) {
   const dispatch = useDispatch<AppDispatch>();
 
   const router = useRouter();
 
   const handlePayFine = async (fine: any, e: any) => {
     e.preventDefault();
-    console.log(fine);    
-
     try {
       const data: any = {
         idBook: fine?.idBook,
@@ -139,7 +137,7 @@ export default function ButtonUpdateFine({
   return (
     <button
       type="button"
-      className={`ml-1 px-3 py-1 font-medium rounded-md shadow-sm bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white ${
+      className={`px-3 py-1 font-medium rounded-md shadow-sm bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white ${
         fineStatus === "success" ? "line-through" : "hover:opacity-80"
       }`}
       onClick={(e) => {

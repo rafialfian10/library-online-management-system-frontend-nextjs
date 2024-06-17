@@ -7,15 +7,14 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
+import Navbar from "@/app/components/navbar/navbar";
+import UpdateUser from "../update-user/page";
+import ButtonDelete from "@/app/components/button-delete/buttonDelete";
 import Search from "@/app/components/search/search";
+import Loading from "@/app/loading";
 import AuthAdmin from "@/app/components/auth-admin/authAdmin";
 import { deleteUser, fetchUsers } from "@/redux/features/userSlice";
-import Loading from "@/app/loading";
-
-import Swal from "sweetalert2";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import Navbar from "@/app/components/navbar/navbar";
+import ButtonUpdate from "@/app/components/button-update/buttonUpdate";
 
 function DashboardAdmin() {
   const { data: session, status } = useSession();
@@ -29,6 +28,8 @@ function DashboardAdmin() {
     dispatch(fetchUsers({ session, status }));
   }, [dispatch, session, status]);
 
+  const [dataUser, setDataUser] = useState<any>();
+  const [modalUpdateUser, setModalUpdateUser] = useState(false);
   const [search, setSearch] = useState("");
   const [userFound, setuserFound] = useState(true);
 
@@ -38,57 +39,9 @@ function DashboardAdmin() {
       username.username.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleDeleteUser = async (id: number) => {
-    try {
-      Swal.fire({
-        title: "Are you sure?",
-        html: "Delete this user",
-        icon: "question",
-        iconColor: "#6B7280",
-        background: "#FFFFFF",
-        showCancelButton: true,
-        customClass: {
-          confirmButton: "swal-button-width",
-          cancelButton: "swal-button-width",
-        },
-        confirmButtonText: "Yes",
-        cancelButtonText: "No",
-        confirmButtonColor: "#6B7280",
-        cancelButtonColor: "#CD2E71",
-      }).then(async (result: any) => {
-        if (result.isConfirmed) {
-          const response = await dispatch(deleteUser({ id, session }));
-          if (response.payload && response.payload.status === 200) {
-            toast.success(response.payload.message, {
-              position: "top-right",
-              autoClose: 2000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: false,
-              draggable: true,
-              progress: undefined,
-              theme: "colored",
-              style: { marginTop: "65px" },
-            });
-            dispatch(fetchUsers({ session, status }));
-          }
-        }
-      });
-    } catch (e) {
-      console.log("API Error:", e);
-      toast.error("User failed to delete!", {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        style: { marginTop: "65px" },
-      });
-    }
-  };
+  function closeModalUpdateUser() {
+    setModalUpdateUser(false);
+  }
 
   const handleSearchUser = (event: any) => {
     setSearch(event.target.value);
@@ -99,6 +52,13 @@ function DashboardAdmin() {
     <>
       <Navbar />
       <section className="w-full min-h-screen mt-20">
+        <UpdateUser
+          modalUpdateUser={modalUpdateUser}
+          setModalUpdateUser={setModalUpdateUser}
+          closeModalUpdateUser={closeModalUpdateUser}
+          dataUser={dataUser}
+          fetchUsers={() => dispatch(fetchUsers({ session, status }))}
+        />
         <div className="w-full px-4 md:px-10 lg:px-20 pb-10">
           <div className="mb-5 flex justify-between">
             <p className="m-0 text-center font-bold text-2xl text-gray-500">
@@ -161,6 +121,12 @@ function DashboardAdmin() {
                             </th>
                             <th
                               scope="col"
+                              className="py-4 text-white font-bold text-center"
+                            >
+                              Role
+                            </th>
+                            <th
+                              scope="col"
                               className="px-6 py-4 text-white font-bold text-center"
                             >
                               Action
@@ -214,14 +180,37 @@ function DashboardAdmin() {
                                   <td className="whitespace-nowrap py-4 font-medium text-gray-500 text-center">
                                     {user?.address}
                                   </td>
+                                  <td className="whitespace-nowrap py-4 font-medium text-gray-500 text-center">
+                                    {user?.role?.role}
+                                  </td>
                                   <td className="whitespace-nowrap py-4 text-center">
-                                    <button
-                                      type="button"
-                                      className="px-3 py-1 font-medium rounded-md shadow-sm bg-gradient-to-r from-red-600 via-red-500 to-red-400 text-white hover:opacity-80"
-                                      onClick={() => handleDeleteUser(user?.id)}
-                                    >
-                                      Delete
-                                    </button>
+                                    <ButtonUpdate
+                                      data={user}
+                                      title={null}
+                                      isStatus={null}
+                                      setData={setDataUser}
+                                      setModalUpdate={setModalUpdateUser}
+                                    />
+                                    <span className="text-gray-500 font-bold mx-2">
+                                      |
+                                    </span>
+                                    <ButtonDelete
+                                      id={user?.id}
+                                      title="user"
+                                      fetchData={() =>
+                                        dispatch(
+                                          fetchUsers({ session, status })
+                                        )
+                                      }
+                                      deleteData={() =>
+                                        dispatch(
+                                          deleteUser({
+                                            id: user?.id,
+                                            session,
+                                          })
+                                        )
+                                      }
+                                    />
                                   </td>
                                 </tr>
                               </tbody>

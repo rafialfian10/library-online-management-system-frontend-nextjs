@@ -83,7 +83,7 @@ export default function Navbar() {
       },
       confirmButtonText: "Yes",
       cancelButtonText: "No",
-      confirmButtonColor: "#6B7280",
+      confirmButtonColor: "#3B82F6",
       cancelButtonColor: "#CD2E71",
     }).then((result: any) => {
       if (result.isConfirmed) {

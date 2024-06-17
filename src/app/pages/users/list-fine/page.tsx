@@ -7,13 +7,13 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
+import Navbar from "@/app/components/navbar/navbar";
 import DetailFine from "@/app/components/detail-fine/page";
+import ButtonPayFine from "@/app/components/button-pay-fine/buttonPayFine";
 import Search from "@/app/components/search/search";
-import ButtonUpdateFine from "@/app/components/button-update-fine/buttonUpdateFine";
 import Loading from "@/app/loading";
 import AuthUser from "@/app/components/auth-user/authUser";
 import { fetchFineByUser } from "@/redux/features/fineSlice";
-import Navbar from "@/app/components/navbar/navbar";
 
 function ListFine() {
   const { data: session, status } = useSession();
@@ -176,10 +176,10 @@ function ListFine() {
                                       ? "Paid"
                                       : "Not Paid"}
                                   </td>
-                                  <td className="flex flex-row justify-center whitespace-nowrap px-6 py-4 text-center">
+                                  <td className="flex flex-row justify-center gap-2 whitespace-nowrap px-6 py-4 text-center">
                                     <button
                                       type="button"
-                                      className="px-3 py-1 mr-1 font-bold rounded-md shadow-sm bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white hover:opacity-80"
+                                      className="px-3 py-1 rounded-md shadow-sm bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white hover:opacity-80"
                                       onClick={() => {
                                         setModalDetailFine(true);
                                         setDataFine(fine);
@@ -190,7 +190,7 @@ function ListFine() {
                                     <span className="text-gray-500 font-bold text-xl">
                                       |
                                     </span>
-                                    <ButtonUpdateFine
+                                    <ButtonPayFine
                                       fine={fine}
                                       fineStatus={fine?.status}
                                       session={session}

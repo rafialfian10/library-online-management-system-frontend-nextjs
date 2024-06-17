@@ -11,16 +11,14 @@ import {
   deleteCategory,
 } from "@/redux/features/categorySlice";
 
+import Navbar from "@/app/components/navbar/navbar";
 import AddCategory from "../add-category/page";
 import UpdateCategory from "../update-category/page";
+import ButtonUpdate from "@/app/components/button-update/buttonUpdate";
+import ButtonDelete from "@/app/components/button-delete/buttonDelete";
 import Search from "@/app/components/search/search";
 import AuthAdmin from "@/app/components/auth-admin/authAdmin";
 import Loading from "@/app/loading";
-
-import Swal from "sweetalert2";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import Navbar from "@/app/components/navbar/navbar";
 
 function ListCategory() {
   const { data: session, status } = useSession();
@@ -57,59 +55,6 @@ function ListCategory() {
   function closeModalUpdatecategory() {
     setModalUpdateCategory(false);
   }
-
-  const handleDeleteCategory = async (id: number) => {
-    try {
-      Swal.fire({
-        title: "Are you sure?",
-        html: "Delete this category",
-        icon: "question",
-        iconColor: "#6B7280",
-        background: "#FFFFFF",
-        showCancelButton: true,
-        customClass: {
-          confirmButton: "swal-button-width",
-          cancelButton: "swal-button-width",
-        },
-        confirmButtonText: "Yes",
-        cancelButtonText: "No",
-        confirmButtonColor: "#6B7280",
-        cancelButtonColor: "#CD2E71",
-      }).then(async (result: any) => {
-        if (result.isConfirmed) {
-          const response = await dispatch(deleteCategory({ id, session }));
-
-          if (response.payload && response.payload.status === 200) {
-            toast.success(response.payload.message, {
-              position: "top-right",
-              autoClose: 2000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: false,
-              draggable: true,
-              progress: undefined,
-              theme: "colored",
-              style: { marginTop: "65px" },
-            });
-            dispatch(fetchCategories());
-          }
-        }
-      });
-    } catch (e) {
-      console.log("API Error:", e);
-      toast.error("Category failed to delete!", {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-        theme: "colored",
-        style: { marginTop: "65px" },
-      });
-    }
-  };
 
   const handleSearchCategory = (event: any) => {
     setSearch(event.target.value);
@@ -212,28 +157,31 @@ function ListCategory() {
                                     {category?.category}
                                   </td>
                                   <td className="whitespace-nowrap px-6 py-4 text-center">
-                                    <button
-                                      type="button"
-                                      className="px-2 py-1 rounded-md font-medium shadow-sm bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white hover:opacity-80"
-                                      onClick={() => {
-                                        setModalUpdateCategory(true);
-                                        setDataCategory(category);
-                                      }}
-                                    >
-                                      Update
-                                    </button>
+                                    <ButtonUpdate
+                                      data={category}
+                                      title={null}
+                                      isStatus={null}
+                                      setData={setDataCategory}
+                                      setModalUpdate={setModalUpdateCategory}
+                                    />
                                     <span className="text-gray-500 font-bold mx-2">
                                       |
                                     </span>
-                                    <button
-                                      type="button"
-                                      className="px-3 py-1 font-medium rounded-md shadow-sm bg-gradient-to-r from-red-600 via-red-500 to-red-400 text-white hover:opacity-80"
-                                      onClick={() =>
-                                        handleDeleteCategory(category?.id)
+                                    <ButtonDelete
+                                      id={category?.id}
+                                      title="category"
+                                      fetchData={() =>
+                                        dispatch(fetchCategories())
                                       }
-                                    >
-                                      Delete
-                                    </button>
+                                      deleteData={() =>
+                                        dispatch(
+                                          deleteCategory({
+                                            id: category?.id,
+                                            session,
+                                          })
+                                        )
+                                      }
+                                    />
                                   </td>
                                 </tr>
                               </tbody>

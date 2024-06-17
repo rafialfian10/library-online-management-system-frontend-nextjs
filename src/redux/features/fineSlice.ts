@@ -164,6 +164,42 @@ export const updateFine = createAsyncThunk(
   }
 );
 
+export const updateFineByAdmin = createAsyncThunk(
+  "fine/update-fine-by-admin",
+  async (
+    { formData, id, session }: { formData: any; id: number; session: any },
+    { rejectWithValue }
+  ) => {
+    const userAuth: UserAuth | undefined = session?.user;
+
+    const config = {
+      headers: {
+        "Content-type": "application/json",
+        Authorization: "Bearer " + userAuth?.data?.token,
+      },
+    };
+
+    try {
+      const response = await API.patch(`/fine-status-by-admin/${id}`, formData, config);
+      if (response.status === 200) {
+        const result = await response.data;
+        return result;
+      }
+    } catch (error: any) {
+      if (error.response) {
+        return rejectWithValue({
+          status: error.response.data.status,
+          message: error.response.data.message,
+        });
+      }
+
+      return rejectWithValue(
+        (error as Error).message || "Failed to update fine by admin"
+      );
+    }
+  }
+);
+
 export const deleteFine = createAsyncThunk(
   "fine/delete-fine",
   async (
@@ -296,6 +332,22 @@ const fineSlice = createSlice({
       }
     );
     builder.addCase(updateFine.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.error.message;
+    });
+    builder.addCase(updateFineByAdmin.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(
+      updateFineByAdmin.fulfilled,
+      (state, action: PayloadAction<FineValues>) => {
+        state.loading = false;
+        state.fines = state.fines.map((element: any) =>
+          element.id === action.payload.id ? action.payload : element
+        );
+      }
+    );
+    builder.addCase(updateFineByAdmin.rejected, (state, action) => {
       state.loading = false;
       state.error = action.error.message;
     });

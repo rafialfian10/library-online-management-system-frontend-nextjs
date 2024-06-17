@@ -9,17 +9,17 @@ import { Menu, Transition } from "@headlessui/react";
 
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
-import { fetchBooks } from "@/redux/features/bookSlice";
 
+import Navbar from "@/app/components/navbar/navbar";
 import UpdateBook from "../update-book/page";
+import ButtonUpdate from "@/app/components/button-update/buttonUpdate";
+import ButtonDelete from "@/app/components/button-delete/buttonDelete";
 import SearchBook from "@/app/components/search-book/searchBook";
-import ButtonUpdateBook from "@/app/components/button-update-book/buttonUpdateBook";
-import ButtonDeleteBook from "@/app/components/button-delete-book/buttonDeleteBook";
-import AuthAdmin from "@/app/components/auth-admin/authAdmin";
 import Loading from "@/app/loading";
+import AuthAdmin from "@/app/components/auth-admin/authAdmin";
+import { deleteBook, fetchBooks } from "@/redux/features/bookSlice";
 
 import list from "@/assets/img/titik3.png";
-import Navbar from "@/app/components/navbar/navbar";
 
 function ListBook() {
   const { data: session, status } = useSession();
@@ -74,7 +74,7 @@ function ListBook() {
         />
         <div className="w-full px-4 md:px-10 lg:px-20 pb-10">
           <SearchBook search={search} handleSearchBook={handleSearchBook} />
-          <div className="flex justify-between">
+          <div className="mb-3 flex justify-between">
             <p className="m-0 text-center font-bold text-2xl text-gray-500">
               List Book
             </p>
@@ -110,6 +110,7 @@ function ListBook() {
                               width={100}
                               height={100}
                               priority={true}
+                              className="z-10"
                             />
                           </Menu.Button>
                         </div>
@@ -123,16 +124,27 @@ function ListBook() {
                           leaveFrom="transform opacity-100 scale-100"
                           leaveTo="transform opacity-0 scale-95"
                         >
-                          <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white shadow shadow-gray-500">
+                          <Menu.Items className="absolute top-0 right-0 w-56 origin-top-right rounded-md bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white shadow shadow-gray-500">
                             <div className="py-1">
-                              <ButtonUpdateBook
-                                book={book}
-                                setModalUpdateBook={setModalUpdateBook}
-                                setDataBook={setDataBook}
+                              <ButtonUpdate
+                                data={book}
+                                title="book"
+                                isStatus={null}
+                                setData={setDataBook}
+                                setModalUpdate={setModalUpdateBook}
                               />
-                              <ButtonDeleteBook
-                                bookId={book?.id}
-                                fetchBooks={() => dispatch(fetchBooks())}
+                              <ButtonDelete
+                                id={book?.id}
+                                title="book"
+                                fetchData={() => dispatch(fetchBooks())}
+                                deleteData={() =>
+                                  dispatch(
+                                    deleteBook({
+                                      id: book?.id,
+                                      session,
+                                    })
+                                  )
+                                }
                               />
                             </div>
                           </Menu.Items>

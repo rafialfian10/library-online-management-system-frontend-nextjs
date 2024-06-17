@@ -8,15 +8,18 @@ import moment from "moment";
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
+import Navbar from "@/app/components/navbar/navbar";
 import DetailTransaction from "@/app/components/detail-transaction/page";
 import UpdateTransaction from "@/app/pages/admin/update-transaction/page";
+import ButtonUpdate from "@/app/components/button-update/buttonUpdate";
+import ButtonDelete from "@/app/components/button-delete/buttonDelete";
 import Search from "@/app/components/search/search";
-import ButtonDeleteTransaction from "@/app/components/button-delete-transaction/buttonDeleteTransaction";
-import ButtonUpdateTransaction from "@/app/components/button-update-transaction/buttonUpdateTransaction";
 import Loading from "@/app/loading";
 import AuthAdmin from "@/app/components/auth-admin/authAdmin";
-import { fetchTransactionByAdmin } from "@/redux/features/transactionSlice";
-import Navbar from "@/app/components/navbar/navbar";
+import {
+  deleteTransaction,
+  fetchTransactionByAdmin,
+} from "@/redux/features/transactionSlice";
 
 function ListTransaction() {
   const { data: session, status } = useSession();
@@ -231,7 +234,7 @@ function ListTransaction() {
                                         ? "Borrowed"
                                         : "Returned"}
                                     </td>
-                                    <td className="flex flex-col justify-center whitespace-nowrap px-6 py-4 text-center">
+                                    <td className="flex flex-col justify-center items-center whitespace-nowrap px-6 py-4 text-center">
                                       <button
                                         type="button"
                                         className="mb-3 px-3 py-1 font-medium rounded-md shadow-sm bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 text-white hover:opacity-80"
@@ -242,14 +245,13 @@ function ListTransaction() {
                                       >
                                         Detail Transaction
                                       </button>
-                                      <div className="flex justify-between">
-                                        <ButtonUpdateTransaction
-                                          transaction={transaction}
+                                      <div className="flex justify-between gap-2">
+                                        <ButtonUpdate
+                                          data={transaction}
+                                          title={null}
                                           isStatus={transaction?.isStatus}
-                                          setDataTransaction={
-                                            setDataTransaction
-                                          }
-                                          setModalUpdateTransaction={
+                                          setData={setDataTransaction}
+                                          setModalUpdate={
                                             setModalUpdateTransaction
                                           }
                                         />
@@ -257,13 +259,22 @@ function ListTransaction() {
                                           {" "}
                                           |{" "}
                                         </span>
-                                        <ButtonDeleteTransaction
-                                          transactionId={transaction?.id}
-                                          fetchTransactions={() =>
+                                        <ButtonDelete
+                                          id={transaction?.id}
+                                          title="transaction"
+                                          fetchData={() =>
                                             dispatch(
                                               fetchTransactionByAdmin({
                                                 session,
                                                 status,
+                                              })
+                                            )
+                                          }
+                                          deleteData={() =>
+                                            dispatch(
+                                              deleteTransaction({
+                                                id: transaction?.id,
+                                                session,
                                               })
                                             )
                                           }
