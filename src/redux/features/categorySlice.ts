@@ -7,15 +7,18 @@ import { CategoryValues } from "@/types/category";
 
 export const fetchCategories = createAsyncThunk(
   "categories/fetch",
-  async (thunkAPI, { rejectWithValue }) => {
+  async (
+    { page, perPage }: { page: number; perPage: number },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await API.get(`/categories`);
-
+      const response = await API.get(
+        `/categories?page=${page}&per-page=${perPage}`
+      );
       if (response.status !== 200) {
-        throw new Error("Failed to categories");
+        throw new Error("Failed to fetch categories");
       }
-
-      const result = await response.data.data;
+      const result = await response.data;
       return result;
     } catch (error) {
       return rejectWithValue(error);
@@ -154,14 +157,24 @@ export const deleteCategory = createAsyncThunk(
 );
 
 type categoryState = {
-  categories: CategoryValues[];
+  categories: {
+    data: CategoryValues[];
+    currentPage: number;
+    totalData: number;
+    totalPage: number;
+  };
   category: CategoryValues;
   loading: boolean;
   error: null | any;
 };
 
 const initialStateCategory: categoryState = {
-  categories: [] as CategoryValues[],
+  categories: {
+    data: [],
+    currentPage: 1,
+    totalData: 0,
+    totalPage: 0,
+  },
   category: {} as CategoryValues,
   loading: false,
   error: null,
@@ -172,7 +185,7 @@ const categorySlice = createSlice({
   initialState: initialStateCategory,
   reducers: {
     Categories: (state, action: PayloadAction<CategoryValues[]>) => {
-      state.categories = action.payload;
+      state.categories.data = action.payload;
     },
     Category: (state, action: PayloadAction<CategoryValues>) => {
       state.category = action.payload;
@@ -184,7 +197,15 @@ const categorySlice = createSlice({
     });
     builder.addCase(
       fetchCategories.fulfilled,
-      (state, action: PayloadAction<CategoryValues[]>) => {
+      (
+        state,
+        action: PayloadAction<{
+          data: CategoryValues[];
+          currentPage: number;
+          totalData: number;
+          totalPage: number;
+        }>
+      ) => {
         state.loading = false;
         state.categories = action.payload;
       }
@@ -215,7 +236,7 @@ const categorySlice = createSlice({
       createCategory.fulfilled,
       (state, action: PayloadAction<CategoryValues>) => {
         state.loading = false;
-        state.categories.push(action.payload);
+        state.categories.data.push(action.payload);
       }
     );
     builder.addCase(createCategory.rejected, (state, action) => {
@@ -229,7 +250,7 @@ const categorySlice = createSlice({
       updateCategory.fulfilled,
       (state, action: PayloadAction<CategoryValues>) => {
         state.loading = false;
-        state.categories = state.categories.map((element: any) =>
+        state.categories.data = state.categories.data.map((element: any) =>
           element.id === action.payload.id ? action.payload : element
         );
       }
@@ -247,7 +268,7 @@ const categorySlice = createSlice({
         state.loading = false;
         const { id } = action.payload;
         if (id) {
-          state.categories = state.categories.filter(
+          state.categories.data = state.categories.data.filter(
             (element: any) => element.id !== id
           );
         }

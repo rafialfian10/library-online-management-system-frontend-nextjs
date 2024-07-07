@@ -2,21 +2,23 @@
 
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import Link from "next/link";
 
-import { Fragment, useState, useEffect } from "react";
-import { Menu, Transition } from "@headlessui/react";
+import { useEffect } from "react";
 
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 import { fetchBooks } from "@/redux/features/bookSlice";
 
+import Navbar from "@/app/components/navbar/navbar";
+import Pagination from "@/app/components/pagination/page";
 import Loading from "@/app/loading";
 import AuthUser from "@/app/components/auth-user/authUser";
-import SearchBook from "@/app/components/search-book/searchBook";
-import Navbar from "@/app/components/navbar/navbar";
 
-function DashboardUser() {
+function DashboardUser({
+  searchParams = {},
+}: {
+  searchParams?: { [key: string]: string | string[] | undefined };
+}) {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
@@ -24,32 +26,13 @@ function DashboardUser() {
   const books = useAppSelector((state: RootState) => state.bookSlice.books);
   const loading = useAppSelector((state: RootState) => state.bookSlice.loading);
 
-  useEffect(() => {
-    dispatch(fetchBooks());
-  }, [dispatch, session, status]);
-
-  const [dataBook, setDataBook] = useState<any>();
-  const [modalUpdateBook, setModalUpdateBook] = useState(false);
-  const [search, setSearch] = useState("");
-  const [moviesFound, setMoviesFound] = useState(true);
-
-  const handleSearchBook = (event: any) => {
-    setSearch(event.target.value);
-    setMoviesFound(true);
-  };
-
-  const filteredMovies = books?.filter(
-    (book: any) =>
-      book?.title && book?.title.toLowerCase().includes(search.toLowerCase())
-  );
+  // pagination
+  const page = searchParams["page"] ?? "1";
+  const perPage = books?.data?.length;
 
   useEffect(() => {
-    if (filteredMovies.length === 0 && search !== "") {
-      setMoviesFound(false);
-    } else {
-      setMoviesFound(true);
-    }
-  }, [filteredMovies, search]);
+    dispatch(fetchBooks({ page: Number(page), perPage }));
+  }, [dispatch, session, status, page, perPage]);
 
   return (
     <section className="w-full min-h-screen mt-20">
@@ -64,14 +47,14 @@ function DashboardUser() {
           <Loading />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {filteredMovies?.length > 0 ? (
-              filteredMovies?.map((book: any, i: any) => {
+            {books?.data?.length > 0 ? (
+              books?.data?.map((book: any, i: any) => {
                 return (
                   <div
                     className="w-30% flex flex-col justify-between rounded-lg overflow-hidden shadow-sm shadow-gray-500 bg-white"
                     key={i}
                   >
-                    <div className="w-full h-52">
+                    <div className="w-full h-60">
                       {book?.image &&
                         book?.image !==
                           "http://localhost:5000/uploads/book/image" && (
@@ -79,8 +62,8 @@ function DashboardUser() {
                             src={book?.image}
                             alt={book?.title}
                             width={200}
-                            height={200}
-                            className="w-full h-full object-cover"
+                            height={300}
+                            className="w-full h-full object-fit"
                             priority={true}
                           />
                         )}
@@ -128,6 +111,12 @@ function DashboardUser() {
           </div>
         )}
       </div>
+      <Pagination
+        totalData={books?.totalData}
+        dataPerPage={books?.data?.length}
+        totalPage={books?.totalPage}
+        currentPage={books?.currentPage}
+      />
     </section>
   );
 }

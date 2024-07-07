@@ -7,17 +7,22 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
-import Navbar from "@/app/components/navbar/navbar";
 import DetailFine from "@/app/components/detail-fine/page";
 import UpdateFine from "@/app/pages/admin/update-fine/page";
 import ButtonUpdate from "@/app/components/button-update/buttonUpdate";
 import ButtonDelete from "@/app/components/button-delete/buttonDelete";
+import Navbar from "@/app/components/navbar/navbar";
 import Search from "@/app/components/search/search";
+import Pagination from "@/app/components/pagination/page";
 import Loading from "@/app/loading";
 import AuthAdmin from "@/app/components/auth-admin/authAdmin";
 import { deleteFine, fetchFineByAdmin } from "@/redux/features/fineSlice";
 
-function ListFine() {
+function ListFine({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
@@ -25,15 +30,15 @@ function ListFine() {
   const fines = useAppSelector((state: RootState) => state.fineSlice.fines);
   const loading = useAppSelector((state: RootState) => state.fineSlice.loading);
 
-  useEffect(() => {
-    dispatch(fetchFineByAdmin({ session, status }));
-  }, [dispatch, session, status]);
-
   const [dataFine, setDataFine] = useState<any>();
   const [modalDetailFine, setModalDetailFine] = useState(false);
   const [modalUpdateFine, setModalUpdateFine] = useState(false);
   const [fineFound, setFineFound] = useState(true);
   const [search, setSearch] = useState("");
+
+  // pagination
+  const page = searchParams["page"] ?? "1";
+  const perPage = fines?.data?.length;
 
   function closeModalDetailFine() {
     setModalDetailFine(false);
@@ -43,20 +48,31 @@ function ListFine() {
     setModalUpdateFine(false);
   }
 
-  const filteredFines = fines.filter((fine: any) => {
-    const searchLower = search.toLowerCase();
-    return (
-      fine?.user?.username?.toLowerCase().includes(searchLower) ||
-      fine?.book?.title?.toLowerCase().includes(searchLower) ||
-      fine?.totalDay?.toString().includes(searchLower) ||
-      fine?.totalFine?.toString().includes(searchLower)
-    );
-  });
-
   const handleSearchTransaction = (event: any) => {
     setSearch(event.target.value);
     setFineFound(true);
   };
+
+  const filteredFines = fines?.data?.filter((fine: any) => {
+    const searchLower = search.toLowerCase();
+
+    return (
+      fine?.user?.username?.toLowerCase().includes(searchLower) ||
+      fine?.book?.title?.toLowerCase().includes(searchLower) ||
+      fine?.totalDay?.toString().includes(searchLower) ||
+      fine?.totalFine?.toString().includes(searchLower) ||
+      (searchLower === "paid" && fine?.status?.toLowerCase() === "success") ||
+      (searchLower === "not paid" &&
+        (fine?.status?.toLowerCase() === "failed" ||
+          fine?.status?.toLowerCase() === "pending"))
+    );
+  });
+
+  useEffect(() => {
+    dispatch(
+      fetchFineByAdmin({ session, status, page: Number(page), perPage })
+    );
+  }, [dispatch, session, status, page, perPage]);
 
   return (
     <>
@@ -73,7 +89,11 @@ function ListFine() {
           setModalUpdateFine={setModalUpdateFine}
           closeModalUpdateFine={closeModalUpdateFine}
           dataFine={dataFine}
-          fetchFines={() => dispatch(fetchFineByAdmin({ session, status }))}
+          fetchFines={() =>
+            dispatch(
+              fetchFineByAdmin({ session, status, page: Number(page), perPage })
+            )
+          }
         />
         <div className="w-full px-4 md:px-10 lg:px-20 pb-10">
           <div className="mb-5 flex justify-between">
@@ -159,7 +179,7 @@ function ListFine() {
                             ></th>
                           </tr>
                         </thead>
-                        {filteredFines.length > 0 ? (
+                        {filteredFines?.length > 0 ? (
                           filteredFines?.map((fine: any, i: any) => {
                             return (
                               <tbody key={i}>
@@ -221,6 +241,8 @@ function ListFine() {
                                             fetchFineByAdmin({
                                               session,
                                               status,
+                                              page: Number(page),
+                                              perPage,
                                             })
                                           )
                                         }
@@ -267,6 +289,12 @@ function ListFine() {
             </div>
           )}
         </div>
+        <Pagination
+          totalData={fines?.totalData}
+          dataPerPage={fines?.data?.length}
+          totalPage={fines?.totalPage}
+          currentPage={fines?.currentPage}
+        />
       </section>
     </>
   );

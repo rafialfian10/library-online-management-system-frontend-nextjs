@@ -11,7 +11,12 @@ import { ResendOtpValues } from "@/types/resendOtp";
 export const fetchUsers = createAsyncThunk(
   "users/fetch",
   async (
-    { session, status }: { session: any; status: any },
+    {
+      session,
+      status,
+      page,
+      perPage,
+    }: { session: any; status: any; page: number; perPage: number },
     { rejectWithValue }
   ) => {
     const userAuth: UserAuth | undefined = session?.user;
@@ -25,12 +30,15 @@ export const fetchUsers = createAsyncThunk(
       };
 
       try {
-        const response = await API.get(`/users`, config);
+        const response = await API.get(
+          `/users?page=${page}&per-page=${perPage}`,
+          config
+        );
         if (response.status !== 200) {
           throw new Error("Failed to fetch users");
         }
 
-        const result = await response.data.data;
+        const result = await response.data;
         return result;
       } catch (error) {
         return rejectWithValue(
@@ -219,7 +227,12 @@ export const deleteUser = createAsyncThunk(
 );
 
 type userState = {
-  users: CheckAuthValues[];
+  users: {
+    data: CheckAuthValues[];
+    currentPage: number;
+    totalData: number;
+    totalPage: number;
+  };
   user: CheckAuthValues;
   register: RegisterValues;
   verifyOtp: VerifyOtpValues;
@@ -229,7 +242,12 @@ type userState = {
 };
 
 const initialStateUser: userState = {
-  users: [] as CheckAuthValues[],
+  users: {
+    data: [],
+    currentPage: 1,
+    totalData: 0,
+    totalPage: 0,
+  },
   user: {} as CheckAuthValues,
   register: {} as RegisterValues,
   verifyOtp: {} as VerifyOtpValues,
@@ -252,7 +270,7 @@ const userSlices = createSlice({
       state.resendOtp = action.payload;
     },
     Users: (state, action: PayloadAction<CheckAuthValues[]>) => {
-      state.users = action.payload;
+      state.users.data = action.payload;
     },
     User: (state, action: PayloadAction<CheckAuthValues>) => {
       state.user = action.payload;
@@ -306,7 +324,15 @@ const userSlices = createSlice({
     });
     builder.addCase(
       fetchUsers.fulfilled,
-      (state, action: PayloadAction<CheckAuthValues[]>) => {
+      (
+        state,
+        action: PayloadAction<{
+          data: CheckAuthValues[];
+          currentPage: number;
+          totalData: number;
+          totalPage: number;
+        }>
+      ) => {
         state.loading = false;
         state.users = action.payload;
       }

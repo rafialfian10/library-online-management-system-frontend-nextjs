@@ -7,16 +7,21 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
-import Navbar from "@/app/components/navbar/navbar";
-import UpdateUser from "../update-user/page";
-import ButtonDelete from "@/app/components/button-delete/buttonDelete";
-import Search from "@/app/components/search/search";
-import Loading from "@/app/loading";
 import AuthAdmin from "@/app/components/auth-admin/authAdmin";
-import { deleteUser, fetchUsers } from "@/redux/features/userSlice";
+import UpdateUser from "../update-user/page";
 import ButtonUpdate from "@/app/components/button-update/buttonUpdate";
+import ButtonDelete from "@/app/components/button-delete/buttonDelete";
+import Navbar from "@/app/components/navbar/navbar";
+import Search from "@/app/components/search/search";
+import Pagination from "@/app/components/pagination/page";
+import Loading from "@/app/loading";
+import { deleteUser, fetchUsers } from "@/redux/features/userSlice";
 
-function DashboardAdmin() {
+function DashboardAdmin({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
@@ -24,20 +29,10 @@ function DashboardAdmin() {
   const users = useAppSelector((state: RootState) => state.userSlice.users);
   const loading = useAppSelector((state: RootState) => state.userSlice.loading);
 
-  useEffect(() => {
-    dispatch(fetchUsers({ session, status }));
-  }, [dispatch, session, status]);
-
   const [dataUser, setDataUser] = useState<any>();
   const [modalUpdateUser, setModalUpdateUser] = useState(false);
   const [search, setSearch] = useState("");
   const [userFound, setuserFound] = useState(true);
-
-  const filteredUsers = users.filter(
-    (username: any) =>
-      username?.username &&
-      username.username.toLowerCase().includes(search.toLowerCase())
-  );
 
   function closeModalUpdateUser() {
     setModalUpdateUser(false);
@@ -48,6 +43,27 @@ function DashboardAdmin() {
     setuserFound(true);
   };
 
+  // pagination
+  const page = searchParams["page"] ?? "1";
+  const perPage = users?.data?.length;
+
+  const filteredUsers = users?.data?.filter(
+    (username: any) =>
+      username?.username &&
+      username.username.toLowerCase().includes(search.toLowerCase())
+  );
+
+  useEffect(() => {
+    dispatch(
+      fetchUsers({
+        session,
+        status,
+        page: Number(page),
+        perPage,
+      })
+    );
+  }, [dispatch, session, status, page, perPage]);
+
   return (
     <>
       <Navbar />
@@ -57,7 +73,16 @@ function DashboardAdmin() {
           setModalUpdateUser={setModalUpdateUser}
           closeModalUpdateUser={closeModalUpdateUser}
           dataUser={dataUser}
-          fetchUsers={() => dispatch(fetchUsers({ session, status }))}
+          fetchUsers={() =>
+            dispatch(
+              fetchUsers({
+                session,
+                status,
+                page: Number(page),
+                perPage,
+              })
+            )
+          }
         />
         <div className="w-full px-4 md:px-10 lg:px-20 pb-10">
           <div className="mb-5 flex justify-between">
@@ -154,7 +179,7 @@ function DashboardAdmin() {
                             ></th>
                           </tr>
                         </thead>
-                        {filteredUsers.length > 0 ? (
+                        {filteredUsers?.length > 0 ? (
                           filteredUsers?.map((user: any, i: any) => {
                             return (
                               <tbody key={i}>
@@ -199,7 +224,12 @@ function DashboardAdmin() {
                                       title="user"
                                       fetchData={() =>
                                         dispatch(
-                                          fetchUsers({ session, status })
+                                          fetchUsers({
+                                            session,
+                                            status,
+                                            page: Number(page),
+                                            perPage,
+                                          })
                                         )
                                       }
                                       deleteData={() =>
@@ -244,6 +274,12 @@ function DashboardAdmin() {
             </div>
           )}
         </div>
+        <Pagination
+          totalData={users?.totalData}
+          dataPerPage={users?.data?.length}
+          totalPage={users?.totalPage}
+          currentPage={users?.currentPage}
+        />
       </section>
     </>
   );

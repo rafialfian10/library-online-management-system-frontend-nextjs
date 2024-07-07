@@ -9,14 +9,19 @@ import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
 import DetailTransaction from "@/app/components/detail-transaction/page";
-import Search from "@/app/components/search/search";
-import { fetchTransactionByUser } from "@/redux/features/transactionSlice";
-import { createFine } from "@/redux/features/fineSlice";
-import AuthUser from "@/app/components/auth-user/authUser";
-import Loading from "@/app/loading";
 import Navbar from "@/app/components/navbar/navbar";
+import Search from "@/app/components/search/search";
+import Pagination from "@/app/components/pagination/page";
+import Loading from "@/app/loading";
+import AuthUser from "@/app/components/auth-user/authUser";
+import { fetchTransactionBorrowByUser } from "@/redux/features/transactionSlice";
+// import { createFine } from "@/redux/features/fineSlice";
 
-function ListBookBorrowed() {
+function ListBookBorrowed({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
@@ -28,10 +33,6 @@ function ListBookBorrowed() {
     (state: RootState) => state.transactionSlice.loading
   );
 
-  useEffect(() => {
-    dispatch(fetchTransactionByUser({ session, status }));
-  }, [dispatch, session, status]);
-
   const [dataTransaction, setDataTransaction] = useState<any>();
   const [modalDetailTransaction, setModalDetailTransaction] = useState(false);
   const [transactionFound, setTransactionFound] = useState(true);
@@ -39,41 +40,51 @@ function ListBookBorrowed() {
   const [currentTime, setCurrentTime] = useState(moment());
   const [alertedTransactions, setAlertedTransactions] = useState<any>([]);
 
+  // pagination
+  const page = searchParams["page"] ?? "1";
+  const perPage = transactions?.data?.length;
+
   function closeModalDetailTransaction() {
     setModalDetailTransaction(false);
   }
-
-  const filteredTransactions = transactions.filter((transaction: any) => {
-    if (!transaction.isStatus) return false;
-
-    const searchLower = search.toLowerCase();
-    return (
-      transaction?.transactionType?.toLowerCase().includes(searchLower) ||
-      transaction?.user?.username?.toLowerCase().includes(searchLower) ||
-      transaction?.book?.title?.toLowerCase().includes(searchLower) ||
-      transaction?.totalBook?.toString().includes(searchLower) ||
-      moment(transaction?.loanDate)
-        .format("DD MMMM YYYY")
-        .toLowerCase()
-        .includes(searchLower) ||
-      moment(transaction?.returnDate)
-        .format("DD MMMM YYYY")
-        .toLowerCase()
-        .includes(searchLower) ||
-      moment(transaction?.loanMaximum)
-        .format("DD MMMM YYYY")
-        .toLowerCase()
-        .includes(searchLower) ||
-      (transaction?.isStatus ? "Borrowed" : "Returned")
-        .toLowerCase()
-        .includes(searchLower)
-    );
-  });
 
   const handleSearchTransaction = (event: any) => {
     setSearch(event.target.value);
     setTransactionFound(true);
   };
+
+  const filteredTransactions = transactions?.data?.filter(
+    (transaction: any) => {
+      const searchLower = search.toLowerCase();
+      return (
+        transaction?.transactionType?.toLowerCase().includes(searchLower) ||
+        transaction?.user?.username?.toLowerCase().includes(searchLower) ||
+        transaction?.book?.title?.toLowerCase().includes(searchLower) ||
+        transaction?.totalBook?.toString().includes(searchLower) ||
+        moment(transaction?.loanDate)
+          .format("DD MMMM YYYY")
+          .toLowerCase()
+          .includes(searchLower) ||
+        moment(transaction?.returnDate)
+          .format("DD MMMM YYYY")
+          .toLowerCase()
+          .includes(searchLower) ||
+        moment(transaction?.loanMaximum)
+          .format("DD MMMM YYYY")
+          .toLowerCase()
+          .includes(searchLower) ||
+        (transaction?.isStatus ? "Borrowed" : "Returned")
+          .toLowerCase()
+          .includes(searchLower)
+      );
+    }
+  );
+
+  useEffect(() => {
+    dispatch(
+      fetchTransactionBorrowByUser({ session, status, page: Number(page), perPage })
+    );
+  }, [dispatch, session, status, page, perPage]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -82,33 +93,6 @@ function ListBookBorrowed() {
 
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    filteredTransactions.forEach(async (transaction: any) => {
-      const returnDate = moment(transaction?.returnDate);
-      const diffSeconds = returnDate.diff(moment(), "seconds");
-
-      if (
-        diffSeconds === 0 &&
-        transaction?.isStatus &&
-        !alertedTransactions.includes(transaction?.id)
-      ) {
-        const totalDaysLate = moment().diff(returnDate, "days");
-        // Ensure totalDaysLate is at least 1 if returnDate is in the past but less than a day late
-        const adjustedTotalDaysLate = totalDaysLate > 0 ? totalDaysLate : 1;
-        const adjustedTotalFine = adjustedTotalDaysLate * 10000;
-
-        const formData = new FormData();
-        formData.append("idBook", transaction?.book?.id);
-        formData.append("totalDay", adjustedTotalDaysLate.toString());
-        formData.append("totalFine", adjustedTotalFine.toString());
-
-        await dispatch(createFine({ formData, session }));
-
-        setAlertedTransactions((prev: any) => [...prev, transaction?.id]);
-      }
-    });
-  }, [filteredTransactions, alertedTransactions]);
 
   const countdown = (transaction: any) => {
     const now = moment();
@@ -131,6 +115,33 @@ function ListBookBorrowed() {
 
     return `(${remainingTime})`;
   };
+
+  // useEffect(() => {
+  //   filteredTransactions.forEach(async (transaction: any) => {
+  //     const returnDate = moment(transaction?.returnDate);
+  //     const diffSeconds = returnDate.diff(moment(), "seconds");
+
+  //     if (
+  //       diffSeconds === 0 &&
+  //       transaction?.isStatus &&
+  //       !alertedTransactions.includes(transaction?.id)
+  //     ) {
+  //       const totalDaysLate = moment().diff(returnDate, "days");
+  //       // Ensure totalDaysLate is at least 1 if returnDate is in the past but less than a day late
+  //       const adjustedTotalDaysLate = totalDaysLate > 0 ? totalDaysLate : 1;
+  //       const adjustedTotalFine = adjustedTotalDaysLate * 10000;
+
+  //       const formData = new FormData();
+  //       formData.append("idBook", transaction?.book?.id);
+  //       formData.append("totalDay", adjustedTotalDaysLate.toString());
+  //       formData.append("totalFine", adjustedTotalFine.toString());
+
+  //       await dispatch(createFine({ formData, session }));
+
+  //       setAlertedTransactions((prev: any) => [...prev, transaction?.id]);
+  //     }
+  //   });
+  // }, [filteredTransactions, alertedTransactions]);
 
   return (
     <>
@@ -240,7 +251,7 @@ function ListBookBorrowed() {
                             ></th>
                           </tr>
                         </thead>
-                        {filteredTransactions.length > 0 ? (
+                        {filteredTransactions?.length > 0 ? (
                           filteredTransactions?.map(
                             (transaction: any, i: any) => {
                               return (
@@ -308,7 +319,7 @@ function ListBookBorrowed() {
                                 scope="col"
                                 className="px-6 py-4 text-gray-500 text-left"
                               >
-                                Transaction not found
+                                Books borrowed not found
                               </td>
                               <td
                                 scope="col"
@@ -325,6 +336,12 @@ function ListBookBorrowed() {
             </div>
           )}
         </div>
+        <Pagination
+          totalData={transactions?.totalData}
+          dataPerPage={transactions?.data?.length}
+          totalPage={transactions?.totalPage}
+          currentPage={transactions?.currentPage}
+        />
       </section>
     </>
   );

@@ -10,18 +10,23 @@ import { Menu, Transition } from "@headlessui/react";
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
-import Navbar from "@/app/components/navbar/navbar";
 import UpdateBook from "../update-book/page";
 import ButtonUpdate from "@/app/components/button-update/buttonUpdate";
 import ButtonDelete from "@/app/components/button-delete/buttonDelete";
+import Navbar from "@/app/components/navbar/navbar";
 import SearchBook from "@/app/components/search-book/searchBook";
 import Loading from "@/app/loading";
 import AuthAdmin from "@/app/components/auth-admin/authAdmin";
 import { deleteBook, fetchBooks } from "@/redux/features/bookSlice";
 
 import list from "@/assets/img/titik3.png";
+import Pagination from "@/app/components/pagination/page";
 
-function ListBook() {
+function ListBook({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
@@ -29,18 +34,18 @@ function ListBook() {
   const books = useAppSelector((state: RootState) => state.bookSlice.books);
   const loading = useAppSelector((state: RootState) => state.bookSlice.loading);
 
-  useEffect(() => {
-    dispatch(fetchBooks());
-  }, [dispatch, session, status]);
-
   const [dataBook, setDataBook] = useState<any>();
   const [modalUpdateBook, setModalUpdateBook] = useState(false);
   const [search, setSearch] = useState("");
   const [moviesFound, setMoviesFound] = useState(true);
 
+  // pagination
+  const page = searchParams["page"] ?? "1";
+  const perPage = books?.data?.length;
+
   function closeModalUpdateBook() {
     setModalUpdateBook(false);
-    fetchBooks();
+    fetchBooks({ page: Number(page), perPage });
   }
 
   const handleSearchBook = (event: any) => {
@@ -48,18 +53,22 @@ function ListBook() {
     setMoviesFound(true);
   };
 
-  const filteredMovies = books?.filter(
+  const filteredBooks = books?.data?.filter(
     (book: any) =>
       book?.title && book?.title.toLowerCase().includes(search.toLowerCase())
   );
 
   useEffect(() => {
-    if (filteredMovies.length === 0 && search !== "") {
+    dispatch(fetchBooks({ page: Number(page), perPage }));
+  }, [dispatch, session, status, page, perPage]);
+
+  useEffect(() => {
+    if (filteredBooks.length === 0 && search !== "") {
       setMoviesFound(false);
     } else {
       setMoviesFound(true);
     }
-  }, [filteredMovies, search]);
+  }, [filteredBooks, search]);
 
   return (
     <>
@@ -70,7 +79,9 @@ function ListBook() {
           setModalUpdateBook={setModalUpdateBook}
           closeModalUpdateBook={closeModalUpdateBook}
           dataBook={dataBook}
-          fetchBooks={() => dispatch(fetchBooks())}
+          fetchBooks={() =>
+            dispatch(fetchBooks({ page: Number(page), perPage }))
+          }
         />
         <div className="w-full px-4 md:px-10 lg:px-20 pb-10">
           <SearchBook search={search} handleSearchBook={handleSearchBook} />
@@ -91,8 +102,8 @@ function ListBook() {
             <Loading />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {filteredMovies?.length > 0 ? (
-                filteredMovies?.map((book: any, i: any) => {
+              {filteredBooks?.length > 0 ? (
+                filteredBooks?.map((book: any, i: any) => {
                   return (
                     <div
                       className="w-30% flex flex-col justify-between rounded-lg overflow-hidden shadow-sm shadow-gray-500 bg-white"
@@ -136,7 +147,14 @@ function ListBook() {
                               <ButtonDelete
                                 id={book?.id}
                                 title="book"
-                                fetchData={() => dispatch(fetchBooks())}
+                                fetchData={() =>
+                                  dispatch(
+                                    fetchBooks({
+                                      page: Number(page),
+                                      perPage,
+                                    })
+                                  )
+                                }
                                 deleteData={() =>
                                   dispatch(
                                     deleteBook({
@@ -151,17 +169,16 @@ function ListBook() {
                         </Transition>
                       </Menu>
 
-                      <div className="w-full h-52">
+                      <div className="w-full h-60">
                         {book?.image &&
                           book?.image !==
                             "http://localhost:5000/uploads/book/image" && (
                             <Image
                               src={book?.image}
                               alt={book?.title}
-                              width={150}
-                              height={150}
-                              // objectFit="cover"
-                              className="w-full h-full object-cover"
+                              width={200}
+                              height={300}
+                              className="w-full h-full object-fit"
                               priority={true}
                             />
                           )}
@@ -211,6 +228,12 @@ function ListBook() {
             </div>
           )}
         </div>
+        <Pagination
+          totalData={books?.totalData}
+          dataPerPage={books?.data?.length}
+          totalPage={books?.totalPage}
+          currentPage={books?.currentPage}
+        />
       </section>
     </>
   );

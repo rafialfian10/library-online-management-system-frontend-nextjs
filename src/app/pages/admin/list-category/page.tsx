@@ -11,16 +11,21 @@ import {
   deleteCategory,
 } from "@/redux/features/categorySlice";
 
-import Navbar from "@/app/components/navbar/navbar";
 import AddCategory from "../add-category/page";
 import UpdateCategory from "../update-category/page";
 import ButtonUpdate from "@/app/components/button-update/buttonUpdate";
 import ButtonDelete from "@/app/components/button-delete/buttonDelete";
+import Navbar from "@/app/components/navbar/navbar";
 import Search from "@/app/components/search/search";
 import AuthAdmin from "@/app/components/auth-admin/authAdmin";
+import Pagination from "@/app/components/pagination/page";
 import Loading from "@/app/loading";
 
-function ListCategory() {
+function ListCategory({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
@@ -32,21 +37,11 @@ function ListCategory() {
     (state: RootState) => state.categorySlice.loading
   );
 
-  useEffect(() => {
-    dispatch(fetchCategories());
-  }, [dispatch, session, status]);
-
   const [dataCategory, setDataCategory] = useState<any>();
   const [modalAddCategory, setModalAddCategory] = useState(false);
   const [modalUpdateCategory, setModalUpdateCategory] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFound, setCategoryFound] = useState(true);
-
-  const filteredCategories = categories.filter(
-    (category: any) =>
-      category?.category &&
-      category.category.toLowerCase().includes(search.toLowerCase())
-  );
 
   function closeModalAddcategory() {
     setModalAddCategory(false);
@@ -61,6 +56,18 @@ function ListCategory() {
     setCategoryFound(true);
   };
 
+  // pagination
+  const page = searchParams["page"] ?? "1";
+  const perPage = categories?.data?.length;
+
+  const filteredCategories = categories?.data?.filter((category: any) =>
+    category?.category?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  useEffect(() => {
+    dispatch(fetchCategories({ page: Number(page), perPage }));
+  }, [dispatch, session, status, page, perPage]);
+
   return (
     <>
       <Navbar />
@@ -69,14 +76,18 @@ function ListCategory() {
           modalAddCategory={modalAddCategory}
           setModalAddCategory={setModalAddCategory}
           closeModalAddcategory={closeModalAddcategory}
-          fetchCategories={() => dispatch(fetchCategories())}
+          fetchCategories={() =>
+            dispatch(fetchCategories({ page: Number(page), perPage }))
+          }
         />
         <UpdateCategory
           modalUpdateCategory={modalUpdateCategory}
           setModalUpdateCategory={setModalUpdateCategory}
           closeModalUpdatecategory={closeModalUpdatecategory}
           dataCategory={dataCategory}
-          fetchCategories={() => dispatch(fetchCategories())}
+          fetchCategories={() =>
+            dispatch(fetchCategories({ page: Number(page), perPage }))
+          }
         />
         <div className="w-full px-4 md:px-10 lg:px-20 pb-10">
           <div className="mb-5 flex justify-between">
@@ -145,7 +156,7 @@ function ListCategory() {
                             ></th>
                           </tr>
                         </thead>
-                        {filteredCategories.length > 0 ? (
+                        {filteredCategories?.length > 0 ? (
                           filteredCategories?.map((category: any, i: any) => {
                             return (
                               <tbody key={i}>
@@ -171,7 +182,12 @@ function ListCategory() {
                                       id={category?.id}
                                       title="category"
                                       fetchData={() =>
-                                        dispatch(fetchCategories())
+                                        dispatch(
+                                          fetchCategories({
+                                            page: Number(page),
+                                            perPage: Number(perPage),
+                                          })
+                                        )
                                       }
                                       deleteData={() =>
                                         dispatch(
@@ -215,6 +231,12 @@ function ListCategory() {
             </div>
           )}
         </div>
+        <Pagination
+          totalData={categories?.totalData}
+          dataPerPage={categories?.data?.length}
+          totalPage={categories?.totalPage}
+          currentPage={categories?.currentPage}
+        />
       </section>
     </>
   );

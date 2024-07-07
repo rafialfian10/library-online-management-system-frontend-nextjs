@@ -8,7 +8,12 @@ import { FineValues } from "@/types/fine";
 export const fetchFineByUser = createAsyncThunk(
   "fines/fetch-fines-by-user",
   async (
-    { session, status }: { session: any; status: any },
+    {
+      session,
+      status,
+      page,
+      perPage,
+    }: { session: any; status: any; page: number; perPage: number },
     { rejectWithValue }
   ) => {
     const userAuth: UserAuth | undefined = session?.user;
@@ -22,12 +27,15 @@ export const fetchFineByUser = createAsyncThunk(
       };
 
       try {
-        const response = await API.get(`/fines-by-user`, config);
+        const response = await API.get(
+          `/fines-by-user?page=${page}&per-page=${perPage}`,
+          config
+        );
         if (response.status !== 200) {
           throw new Error("Failed to fetch fines");
         }
 
-        const result = await response.data.data;
+        const result = await response.data;
         return result;
       } catch (error) {
         return rejectWithValue(
@@ -41,7 +49,12 @@ export const fetchFineByUser = createAsyncThunk(
 export const fetchFineByAdmin = createAsyncThunk(
   "fines/fetch-fines-by-admin",
   async (
-    { session, status }: { session: any; status: any },
+    {
+      session,
+      status,
+      page,
+      perPage,
+    }: { session: any; status: any; page: number; perPage: number },
     { rejectWithValue }
   ) => {
     const userAuth: UserAuth | undefined = session?.user;
@@ -55,12 +68,15 @@ export const fetchFineByAdmin = createAsyncThunk(
       };
 
       try {
-        const response = await API.get(`/fines-by-admin`, config);    
+        const response = await API.get(
+          `/fines-by-admin?page=${page}&per-page=${perPage}`,
+          config
+        );
         if (response.status !== 200) {
           throw new Error("Failed to fetch fines");
         }
-        const result = await response.data.data;
-        
+        const result = await response.data;
+
         return result;
       } catch (error) {
         return rejectWithValue(
@@ -108,7 +124,7 @@ export const createFine = createAsyncThunk(
 
     try {
       const response = await API.post("/fine", formData, config);
-      
+
       if (response.status === 201) {
         const result = await response.data;
         return result;
@@ -180,7 +196,11 @@ export const updateFineByAdmin = createAsyncThunk(
     };
 
     try {
-      const response = await API.patch(`/fine-status-by-admin/${id}`, formData, config);
+      const response = await API.patch(
+        `/fine-status-by-admin/${id}`,
+        formData,
+        config
+      );
       if (response.status === 200) {
         const result = await response.data;
         return result;
@@ -238,14 +258,24 @@ export const deleteFine = createAsyncThunk(
 );
 
 type fineState = {
-  fines: FineValues[];
+  fines: {
+    data: FineValues[];
+    currentPage: number;
+    totalData: number;
+    totalPage: number;
+  };
   fine: FineValues;
   loading: boolean;
   error: null | any;
 };
 
 const initialFine: fineState = {
-  fines: [] as FineValues[],
+  fines: {
+    data: [],
+    currentPage: 1,
+    totalData: 0,
+    totalPage: 0,
+  },
   fine: {} as FineValues,
   loading: false,
   error: null,
@@ -256,7 +286,7 @@ const fineSlice = createSlice({
   initialState: initialFine,
   reducers: {
     Fines: (state, action: PayloadAction<FineValues[]>) => {
-      state.fines = action.payload;
+      state.fines.data = action.payload;
     },
     Fine: (state, action: PayloadAction<FineValues>) => {
       state.fine = action.payload;
@@ -268,7 +298,15 @@ const fineSlice = createSlice({
     });
     builder.addCase(
       fetchFineByUser.fulfilled,
-      (state, action: PayloadAction<FineValues[]>) => {
+      (
+        state,
+        action: PayloadAction<{
+          data: FineValues[];
+          currentPage: number;
+          totalData: number;
+          totalPage: number;
+        }>
+      ) => {
         state.loading = false;
         state.fines = action.payload;
       }
@@ -282,7 +320,15 @@ const fineSlice = createSlice({
     });
     builder.addCase(
       fetchFineByAdmin.fulfilled,
-      (state, action: PayloadAction<FineValues[]>) => {
+      (
+        state,
+        action: PayloadAction<{
+          data: FineValues[];
+          currentPage: number;
+          totalData: number;
+          totalPage: number;
+        }>
+      ) => {
         state.loading = false;
         state.fines = action.payload;
       }
@@ -312,7 +358,7 @@ const fineSlice = createSlice({
       createFine.fulfilled,
       (state, action: PayloadAction<FineValues>) => {
         state.loading = false;
-        state.fines.push(action.payload);
+        state.fines.data.push(action.payload);
       }
     );
     builder.addCase(createFine.rejected, (state, action) => {
@@ -326,7 +372,7 @@ const fineSlice = createSlice({
       updateFine.fulfilled,
       (state, action: PayloadAction<FineValues>) => {
         state.loading = false;
-        state.fines = state.fines.map((element: any) =>
+        state.fines.data = state.fines.data.map((element: any) =>
           element.id === action.payload.id ? action.payload : element
         );
       }
@@ -342,7 +388,7 @@ const fineSlice = createSlice({
       updateFineByAdmin.fulfilled,
       (state, action: PayloadAction<FineValues>) => {
         state.loading = false;
-        state.fines = state.fines.map((element: any) =>
+        state.fines.data = state.fines.data.map((element: any) =>
           element.id === action.payload.id ? action.payload : element
         );
       }
@@ -360,7 +406,7 @@ const fineSlice = createSlice({
         state.loading = false;
         const { id } = action.payload;
         if (id) {
-          state.fines = state.fines.filter((element: any) => element.id !== id);
+          state.fines.data = state.fines.data.filter((element: any) => element.id !== id);
         }
       }
     );

@@ -40,7 +40,7 @@ export default function Navbar() {
   const books = useAppSelector((state: RootState) => state.bookSlice.books);
 
   useEffect(() => {
-      dispatch(fetchBooks());
+      dispatch(fetchBooks({page: 1, perPage: books?.data?.length}));
       dispatch(fetchUserAuth({ session, status }));
   }, [dispatch, session, status]);
 
@@ -55,7 +55,7 @@ export default function Navbar() {
     setBooksFound(true);
   };
 
-  const filteredBooks = books?.filter(
+  const filteredBooks = books?.data?.filter(
     (book: any) =>
       book?.title && book?.title.toLowerCase().includes(search.toLowerCase())
   );

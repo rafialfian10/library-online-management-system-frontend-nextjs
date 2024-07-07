@@ -7,15 +7,20 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
-import Navbar from "@/app/components/navbar/navbar";
 import DetailFine from "@/app/components/detail-fine/page";
 import ButtonPayFine from "@/app/components/button-pay-fine/buttonPayFine";
+import Navbar from "@/app/components/navbar/navbar";
 import Search from "@/app/components/search/search";
+import Pagination from "@/app/components/pagination/page";
 import Loading from "@/app/loading";
 import AuthUser from "@/app/components/auth-user/authUser";
 import { fetchFineByUser } from "@/redux/features/fineSlice";
 
-function ListFine() {
+function ListFine({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
@@ -23,20 +28,25 @@ function ListFine() {
   const fines = useAppSelector((state: RootState) => state.fineSlice.fines);
   const loading = useAppSelector((state: RootState) => state.fineSlice.loading);
 
-  useEffect(() => {
-    dispatch(fetchFineByUser({ session, status }));
-  }, [dispatch, session, status]);
-
   const [dataFine, setDataFine] = useState<any>();
   const [modalDetailFine, setModalDetailFine] = useState(false);
   const [fineFound, setFineFound] = useState(true);
   const [search, setSearch] = useState("");
 
+  // pagination
+  const page = searchParams["page"] ?? "1";
+  const perPage = fines?.data?.length;
+
   function closeModalDetailFine() {
     setModalDetailFine(false);
   }
 
-  const filteredFines = fines.filter((fine: any) => {
+  const handleSearchTransaction = (event: any) => {
+    setSearch(event.target.value);
+    setFineFound(true);
+  };
+
+  const filteredFines = fines?.data?.filter((fine: any) => {
     const searchLower = search.toLowerCase();
     return (
       fine?.user?.username?.toLowerCase().includes(searchLower) ||
@@ -46,10 +56,9 @@ function ListFine() {
     );
   });
 
-  const handleSearchTransaction = (event: any) => {
-    setSearch(event.target.value);
-    setFineFound(true);
-  };
+  useEffect(() => {
+    dispatch(fetchFineByUser({ session, status, page: Number(page), perPage }));
+  }, [dispatch, session, status, page, perPage]);
 
   return (
     <>
@@ -145,7 +154,7 @@ function ListFine() {
                             ></th>
                           </tr>
                         </thead>
-                        {filteredFines.length > 0 ? (
+                        {filteredFines?.length > 0 ? (
                           filteredFines?.map((fine: any, i: any) => {
                             return (
                               <tbody key={i}>
@@ -196,7 +205,12 @@ function ListFine() {
                                       session={session}
                                       fetchFineByUser={() =>
                                         dispatch(
-                                          fetchFineByUser({ session, status })
+                                          fetchFineByUser({
+                                            session,
+                                            status,
+                                            page: Number(page),
+                                            perPage,
+                                          })
                                         )
                                       }
                                     />
@@ -233,6 +247,12 @@ function ListFine() {
             </div>
           )}
         </div>
+        <Pagination
+          totalData={fines?.totalData}
+          dataPerPage={fines?.data?.length}
+          totalPage={fines?.totalPage}
+          currentPage={fines?.currentPage}
+        />
       </section>
     </>
   );

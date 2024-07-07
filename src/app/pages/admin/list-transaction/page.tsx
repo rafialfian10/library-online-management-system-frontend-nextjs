@@ -8,12 +8,13 @@ import moment from "moment";
 import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
-import Navbar from "@/app/components/navbar/navbar";
 import DetailTransaction from "@/app/components/detail-transaction/page";
 import UpdateTransaction from "@/app/pages/admin/update-transaction/page";
 import ButtonUpdate from "@/app/components/button-update/buttonUpdate";
 import ButtonDelete from "@/app/components/button-delete/buttonDelete";
+import Navbar from "@/app/components/navbar/navbar";
 import Search from "@/app/components/search/search";
+import Pagination from "@/app/components/pagination/page";
 import Loading from "@/app/loading";
 import AuthAdmin from "@/app/components/auth-admin/authAdmin";
 import {
@@ -21,7 +22,11 @@ import {
   fetchTransactionByAdmin,
 } from "@/redux/features/transactionSlice";
 
-function ListTransaction() {
+function ListTransaction({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
@@ -33,15 +38,15 @@ function ListTransaction() {
     (state: RootState) => state.transactionSlice.loading
   );
 
-  useEffect(() => {
-    dispatch(fetchTransactionByAdmin({ session, status }));
-  }, [dispatch, session, status]);
-
   const [dataTransaction, setDataTransaction] = useState<any>();
   const [modalDetailTransaction, setModalDetailTransaction] = useState(false);
   const [modalUpdateTransaction, setModalUpdateTransaction] = useState(false);
   const [transactionFound, setTransactionFound] = useState(true);
   const [search, setSearch] = useState("");
+
+  // pagination
+  const page = searchParams["page"] ?? "1";
+  const perPage = transactions?.data?.length;
 
   function closeModalDetailTransaction() {
     setModalDetailTransaction(false);
@@ -51,35 +56,43 @@ function ListTransaction() {
     setModalUpdateTransaction(false);
   }
 
-  const filteredTransactions = transactions.filter((transaction: any) => {
-    const searchLower = search.toLowerCase();
-    return (
-      transaction?.transactionType?.toLowerCase().includes(searchLower) ||
-      transaction?.user?.username?.toLowerCase().includes(searchLower) ||
-      transaction?.book?.title?.toLowerCase().includes(searchLower) ||
-      transaction?.totalBook?.toString().includes(searchLower) ||
-      moment(transaction?.loanDate)
-        .format("DD MMMM YYYY")
-        .toLowerCase()
-        .includes(searchLower) ||
-      moment(transaction?.returnDate)
-        .format("DD MMMM YYYY")
-        .toLowerCase()
-        .includes(searchLower) ||
-      moment(transaction?.loanMaximum)
-        .format("DD MMMM YYYY")
-        .toLowerCase()
-        .includes(searchLower) ||
-      (transaction?.isStatus ? "Borrowed" : "Returned")
-        .toLowerCase()
-        .includes(searchLower)
-    );
-  });
-
   const handleSearchTransaction = (event: any) => {
     setSearch(event.target.value);
     setTransactionFound(true);
   };
+
+  const filteredTransactions = transactions?.data?.filter(
+    (transaction: any) => {
+      const searchLower = search.toLowerCase();
+      return (
+        transaction?.transactionType?.toLowerCase().includes(searchLower) ||
+        transaction?.user?.username?.toLowerCase().includes(searchLower) ||
+        transaction?.book?.title?.toLowerCase().includes(searchLower) ||
+        transaction?.totalBook?.toString().includes(searchLower) ||
+        moment(transaction?.loanDate)
+          .format("DD MMMM YYYY")
+          .toLowerCase()
+          .includes(searchLower) ||
+        moment(transaction?.returnDate)
+          .format("DD MMMM YYYY")
+          .toLowerCase()
+          .includes(searchLower) ||
+        moment(transaction?.loanMaximum)
+          .format("DD MMMM YYYY")
+          .toLowerCase()
+          .includes(searchLower) ||
+        (transaction?.isStatus ? "Borrowed" : "Returned")
+          .toLowerCase()
+          .includes(searchLower)
+      );
+    }
+  );
+
+  useEffect(() => {
+    dispatch(
+      fetchTransactionByAdmin({ session, status, page: Number(page), perPage })
+    );
+  }, [dispatch, session, status, page, perPage]);
 
   return (
     <>
@@ -97,7 +110,14 @@ function ListTransaction() {
           closeModalUpdateTransaction={closeModalUpdateTransaction}
           dataTransaction={dataTransaction}
           fetchTransactions={() =>
-            dispatch(fetchTransactionByAdmin({ session, status }))
+            dispatch(
+              fetchTransactionByAdmin({
+                session,
+                status,
+                page: Number(page),
+                perPage,
+              })
+            )
           }
         />
         <div className="w-full px-4 md:px-10 lg:px-20 pb-10">
@@ -198,7 +218,7 @@ function ListTransaction() {
                             ></th>
                           </tr>
                         </thead>
-                        {filteredTransactions.length > 0 ? (
+                        {filteredTransactions?.length > 0 ? (
                           filteredTransactions?.map(
                             (transaction: any, i: any) => {
                               return (
@@ -267,6 +287,8 @@ function ListTransaction() {
                                               fetchTransactionByAdmin({
                                                 session,
                                                 status,
+                                                page: Number(page),
+                                                perPage,
                                               })
                                             )
                                           }
@@ -314,6 +336,12 @@ function ListTransaction() {
             </div>
           )}
         </div>
+        <Pagination
+          totalData={transactions?.totalData}
+          dataPerPage={transactions?.data?.length}
+          totalPage={transactions?.totalPage}
+          currentPage={transactions?.currentPage}
+        />
       </section>
     </>
   );

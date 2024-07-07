@@ -12,24 +12,28 @@ import { fetchBooks, createBook } from "@/redux/features/bookSlice";
 import { fetchCategories } from "@/redux/features/categorySlice";
 
 import AuthAdmin from "@/app/components/auth-admin/authAdmin";
+import Navbar from "@/app/components/navbar/navbar";
 import { AddBookValues } from "@/types/addBook";
 
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Navbar from "@/app/components/navbar/navbar";
 
 function AddBook() {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
 
+  const books = useAppSelector(
+    (state: RootState) => state.bookSlice.books
+  );
+
   const categories = useAppSelector(
     (state: RootState) => state.categorySlice.categories
   );
 
   useEffect(() => {
-    dispatch(fetchBooks());
-    dispatch(fetchCategories());
+    dispatch(fetchBooks({page: 1, perPage: books?.data?.length}));
+    dispatch(fetchCategories({page: 1, perPage: categories?.data?.length}));
   }, [dispatch, session, status]);
 
   const router = useRouter();
@@ -70,8 +74,6 @@ function AddBook() {
   });
 
   const onSubmit: SubmitHandler<AddBookValues> = async (data) => {
-    console.log(data);
-
     const formData = new FormData();
     formData.append("title", data.title);
     formData.append("publicationDate", data.publicationDate);
@@ -106,7 +108,7 @@ function AddBook() {
           theme: "colored",
           style: { marginTop: "65px" },
         });
-        dispatch(fetchBooks());
+        dispatch(fetchBooks({page: 1, perPage: books?.data?.length}));
         router.push("/pages/admin/list-book");
         reset();
       } else if (response.payload && response.payload.status === 401) {
@@ -145,7 +147,7 @@ function AddBook() {
   const selectedCategoryId = watch("categoryId");
   const handleChangeSelectAll = (checked: any) => {
     setValue("selectAll", checked);
-    const categoryIds = categories.map((category: any) => category.id);
+    const categoryIds = categories?.data?.map((category: any) => category.id);
     setValue("categoryId", checked ? categoryIds : []);
   };
 
@@ -219,7 +221,7 @@ function AddBook() {
                 </label>
                 <div className="relative mt-2 flex items-start">
                   <div className="w-full h-fit flex flex-wrap">
-                    {categories?.map((category: any) => {
+                    {categories?.data?.map((category: any) => {
                       return (
                         <div
                           className="w-1/6 max-sm:w-1/3 mb-3 flex items-center"

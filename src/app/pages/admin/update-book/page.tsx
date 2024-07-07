@@ -50,7 +50,7 @@ function UpdateBook({
   );
 
   useEffect(() => {
-    dispatch(fetchCategories());
+    dispatch(fetchCategories({page: 1, perPage: Number(categories?.data?.length)}));
   }, []);
 
   const errorMessages = {
@@ -392,7 +392,7 @@ function UpdateBook({
                           </label>
                           <div className="relative mt-2 flex items-start">
                             <div className="mr-5 flex flex-col flex-wrap h-28">
-                              {categories?.map((category: any) => {
+                              {categories?.data?.map((category: any) => {
                                 const isChecked = dataBook?.categories.some(
                                   (idCategory: { id: number }) =>
                                     idCategory.id == category.id

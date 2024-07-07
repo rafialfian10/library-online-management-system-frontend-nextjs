@@ -9,13 +9,18 @@ import { useDispatch } from "react-redux";
 import { AppDispatch, RootState, useAppSelector } from "@/redux/store";
 
 import DetailTransaction from "@/app/components/detail-transaction/page";
-import Search from "@/app/components/search/search";
-import { fetchTransactionByUser } from "@/redux/features/transactionSlice";
-import AuthUser from "@/app/components/auth-user/authUser";
-import Loading from "@/app/loading";
 import Navbar from "@/app/components/navbar/navbar";
+import Search from "@/app/components/search/search";
+import Pagination from "@/app/components/pagination/page";
+import Loading from "@/app/loading";
+import AuthUser from "@/app/components/auth-user/authUser";
+import { fetchTransactionReturnByUser } from "@/redux/features/transactionSlice";
 
-function ListBookReturned() {
+function ListBookReturned({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const { data: session, status } = useSession();
 
   const dispatch = useDispatch<AppDispatch>();
@@ -27,50 +32,56 @@ function ListBookReturned() {
     (state: RootState) => state.transactionSlice.loading
   );
 
-  useEffect(() => {
-    dispatch(fetchTransactionByUser({ session, status }));
-  }, [dispatch, session, status]);
-
   const [dataTransaction, setDataTransaction] = useState<any>();
   const [modalDetailTransaction, setModalDetailTransaction] = useState(false);
   const [transactionFound, setTransactionFound] = useState(true);
   const [search, setSearch] = useState("");
 
+  // pagination
+  const page = searchParams["page"] ?? "1";
+  const perPage = transactions?.data?.length;  
+
   function closeModalDetailTransaction() {
     setModalDetailTransaction(false);
   }
-
-  const filteredTransactions = transactions.filter((transaction: any) => {
-    if (transaction.isStatus) return false;
-
-    const searchLower = search.toLowerCase();
-    return (
-      transaction?.transactionType?.toLowerCase().includes(searchLower) ||
-      transaction?.user?.username?.toLowerCase().includes(searchLower) ||
-      transaction?.book?.title?.toLowerCase().includes(searchLower) ||
-      transaction?.totalBook?.toString().includes(searchLower) ||
-      moment(transaction?.loanDate)
-        .format("DD MMMM YYYY")
-        .toLowerCase()
-        .includes(searchLower) ||
-      moment(transaction?.returnDate)
-        .format("DD MMMM YYYY")
-        .toLowerCase()
-        .includes(searchLower) ||
-      moment(transaction?.loanMaximum)
-        .format("DD MMMM YYYY")
-        .toLowerCase()
-        .includes(searchLower) ||
-      (transaction?.isStatus ? "Borrowed" : "Returned")
-        .toLowerCase()
-        .includes(searchLower)
-    );
-  });
 
   const handleSearchTransaction = (event: any) => {
     setSearch(event.target.value);
     setTransactionFound(true);
   };
+
+  const filteredTransactions = transactions?.data?.filter(
+    (transaction: any) => {
+      const searchLower = search.toLowerCase();
+      return (
+        transaction?.transactionType?.toLowerCase().includes(searchLower) ||
+        transaction?.user?.username?.toLowerCase().includes(searchLower) ||
+        transaction?.book?.title?.toLowerCase().includes(searchLower) ||
+        transaction?.totalBook?.toString().includes(searchLower) ||
+        moment(transaction?.loanDate)
+          .format("DD MMMM YYYY")
+          .toLowerCase()
+          .includes(searchLower) ||
+        moment(transaction?.returnDate)
+          .format("DD MMMM YYYY")
+          .toLowerCase()
+          .includes(searchLower) ||
+        moment(transaction?.loanMaximum)
+          .format("DD MMMM YYYY")
+          .toLowerCase()
+          .includes(searchLower) ||
+        (transaction?.isStatus ? "Borrowed" : "Returned")
+          .toLowerCase()
+          .includes(searchLower)
+      );
+    }
+  );
+
+  useEffect(() => {
+    dispatch(
+      fetchTransactionReturnByUser({ session, status, page: Number(page), perPage })
+    );
+  }, [dispatch, session, status, page, perPage]);
 
   return (
     <>
@@ -180,7 +191,7 @@ function ListBookReturned() {
                             ></th>
                           </tr>
                         </thead>
-                        {filteredTransactions.length > 0 ? (
+                        {filteredTransactions?.length > 0 ? (
                           filteredTransactions?.map(
                             (transaction: any, i: any) => {
                               return (
@@ -244,7 +255,7 @@ function ListBookReturned() {
                                 scope="col"
                                 className="px-6 py-4 text-gray-500 text-left"
                               >
-                                Transaction not found
+                                Books returned not found
                               </td>
                               <td
                                 scope="col"
@@ -261,6 +272,12 @@ function ListBookReturned() {
             </div>
           )}
         </div>
+        <Pagination
+          totalData={transactions?.totalData}
+          dataPerPage={transactions?.data?.length}
+          totalPage={transactions?.totalPage}
+          currentPage={transactions?.currentPage}
+        />
       </section>
     </>
   );

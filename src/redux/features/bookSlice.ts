@@ -7,15 +7,18 @@ import { BookValues } from "@/types/book";
 
 export const fetchBooks = createAsyncThunk(
   "books/fetch",
-  async (thunkAPI, { rejectWithValue }) => {
+  async (
+    { page, perPage }: { page: number; perPage: number },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await API.get(`/books`);
+      const response = await API.get(`/books?page=${page}&per-page=${perPage}`);
 
       if (response.status !== 200) {
         throw new Error("Failed to books");
       }
 
-      const result = await response.data.data;
+      const result = await response.data;
       return result;
     } catch (error) {
       return rejectWithValue(error);
@@ -60,8 +63,8 @@ export const createBook = createAsyncThunk(
 
     try {
       const response = await API.post("/book", formData, config);
-      console.log("response",response);
-      
+      console.log("response", response);
+
       if (response.status === 201) {
         const result = await response.data;
         return result;
@@ -156,14 +159,24 @@ export const deleteBook = createAsyncThunk(
 );
 
 type bookState = {
-  books: BookValues[];
+  books: {
+    data: BookValues[];
+    currentPage: number;
+    totalData: number;
+    totalPage: number;
+  };
   book: BookValues;
   loading: boolean;
   error: null | any;
 };
 
 const initialStateBook: bookState = {
-  books: [] as BookValues[],
+  books: {
+    data: [],
+    currentPage: 1,
+    totalData: 0,
+    totalPage: 0,
+  },
   book: {} as BookValues,
   loading: false,
   error: null,
@@ -174,7 +187,7 @@ const bookSlices = createSlice({
   initialState: initialStateBook,
   reducers: {
     Books: (state, action: PayloadAction<BookValues[]>) => {
-      state.books = action.payload;
+      state.books.data = action.payload;
     },
     Book: (state, action: PayloadAction<BookValues>) => {
       state.book = action.payload;
@@ -186,7 +199,15 @@ const bookSlices = createSlice({
     });
     builder.addCase(
       fetchBooks.fulfilled,
-      (state, action: PayloadAction<BookValues[]>) => {
+      (
+        state,
+        action: PayloadAction<{
+          data: BookValues[];
+          currentPage: number;
+          totalData: number;
+          totalPage: number;
+        }>
+      ) => {
         state.loading = false;
         state.books = action.payload;
       }
@@ -216,7 +237,7 @@ const bookSlices = createSlice({
       createBook.fulfilled,
       (state, action: PayloadAction<BookValues>) => {
         state.loading = false;
-        state.books.push(action.payload);
+        state.books.data.push(action.payload);
       }
     );
     builder.addCase(createBook.rejected, (state, action) => {
@@ -230,7 +251,7 @@ const bookSlices = createSlice({
       updateBook.fulfilled,
       (state, action: PayloadAction<BookValues>) => {
         state.loading = false;
-        state.books = state.books.map((element: any) =>
+        state.books.data = state.books.data.map((element: any) =>
           element.id === action.payload.id ? action.payload : element
         );
       }
@@ -248,7 +269,7 @@ const bookSlices = createSlice({
         state.loading = false;
         const { id } = action.payload;
         if (id) {
-          state.books = state.books.filter((element: any) => element.id !== id);
+          state.books.data = state.books.data.filter((element: any) => element.id !== id);
         }
       }
     );
